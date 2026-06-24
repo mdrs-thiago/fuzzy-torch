@@ -29,6 +29,16 @@ class FuzzyModule(nn.Module):
         """
         Returns a tensor of firing strengths for each rule.
         """
+        if not self.rules:
+            if x:
+                first_tensor = next(iter(x.values()))
+                batch_size = first_tensor.shape[0] if first_tensor.dim() > 0 else 1
+                device = first_tensor.device
+            else:
+                batch_size = 1
+                device = torch.device('cpu')
+            return torch.zeros((batch_size, 0), device=device)
+
         activations = []
         for rule in self.rules:
             # Rule forward returns firing strength (scalar per batch item)
@@ -41,6 +51,10 @@ class FuzzyModule(nn.Module):
         Returns: Crisp output tensor (batch_size,).
         """
         batch_size = next(iter(x.values())).shape[0] if x else 1
+        
+        if not self.rules:
+            device = next(iter(x.values())).device if x else torch.device('cpu')
+            return torch.zeros((batch_size,), device=device)
         
         # 1. Evaluate Rules (get firing strengths)
         rule_activations = self.get_rule_activations(x) # (batch, num_rules)
